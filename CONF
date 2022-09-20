@@ -1,0 +1,28 @@
+sample	DEITIES
+analys	DEITIES_A
+LAY	1
+struct	manual
+	sig sig sig sig sig sig sig sig eoN
+learn	unsu
+filter_yes
+	0 0	LORD eoF
+	0 1	SEER eoF
+	0 2	WARRIOR eoF
+	0 3	MOTHER_EARTH eoF
+	
+	0 4	MOUNTAIN WHITE eoF
+	0 5	SEA	BLUE eoF
+	0 6	FOREST	DOE eoF
+	0 7	BLACK RED eoF
+	-1
+filter_no
+	0 4	BLACK eoF
+	0 5	RED eoF
+	0 6	EAGLE eoF
+	0 7	WHITE eoF
+	-1
+
+cycle	300
+save	RES
+EOF
+
