@@ -6,9 +6,8 @@
 #include <vector>
 #include <algorithm>
 #include <random>
-#include "/home/przemek/MojeProgramy/BIBLIOTEKI2/MAT.h"
-#include "/home/przemek/MojeProgramy/MÓZG_ELEKTRONOWY/4Git/TSAMPLE.h"
-#include "/home/przemek/MojeProgramy/MÓZG_ELEKTRONOWY/4Git/TNET.h"
+#include "TSAMPLE.h"
+#include "TNET.h"
 using namespace std;
 void read_samples(string infile, vector<TSample> &Samples, bool normalization);
 void configuration(bool &bias, bool &normalization, int &learn_cycles, string &learn_mode, string &outfile, string &net_name, 
@@ -18,7 +17,6 @@ void analysis(TNet Brain, vector<TSample> Samples, vector<TSample> Analytes, str
 /////////////////////////////////////////////////////////////////////////
 int main()
 {
-srand( time( NULL ) );
 vector<TSample> Samples;
 vector<TSample> Analytes;
 bool bias=false;
@@ -30,61 +28,48 @@ string net_name;
 TNet Brain;
 configuration(bias, normalization, learn_cycles, learn_mode, outfile, net_name, Brain, Samples, Analytes);
 net_learning(learn_mode, learn_cycles, normalization, Brain, Samples);
-//Brain.save_net(net_name);
+Brain.save_net(net_name);
 Brain.show_weights();
 Brain.free_filters();
 analysis(Brain, Samples, Analytes, outfile);
-cout<<
-"\nFunkcja normalizująca próbki powinno równocześnie normalizować"
-"\nprogi filtrów!";
-
 ////////////////////////////////////////////////////////////////////////
 }
 void read_samples(string infile, vector<TSample> &Samples, bool normalization)
 {
+	//Read labels
 	ifstream DATA{infile};
-	int types_number;
 	vector<string> labels;
+	{
+		string dat;
+		while(DATA>>dat&&dat!="EoE")
+		{
+			labels.push_back(dat);
+		}
+	}
+	//Read samples
 	vector<double> signals;
 	vector<double> response_patterns;
-	string dat;
-	do{
-		DATA>>dat;
-		labels.push_back(dat);
-	}while(dat!="EoE");
-	labels.pop_back();
-	for(auto e:labels)
-	{
-		//cout<<"\n"<<e;
-	}
-	double s;
-	for(unsigned int i=0; i<labels.size(); i++)
-	{
-		DATA>>s;
-		signals.push_back(s);
-	}
-	DATA>>s; response_patterns.push_back(s);
-	Samples.push_back(TSample(labels, signals, response_patterns));
-	double w=Samples.back().response_pattern(0);
+	double s=0;
 	while(s!=-666)
 	{
 		signals.clear(); 
 		response_patterns.clear();
 		for(unsigned int sig=0; sig<labels.size(); sig++)
 		{
-			DATA>>s; if(s==-666){break;} signals.push_back(s);
+			DATA>>s; 
+			signals.push_back(s);
 		}
-		DATA>>s; response_patterns.push_back(s);
+		DATA>>s; 
+		response_patterns.push_back(s);
 		Samples.push_back(TSample(labels, signals, response_patterns));
-		if(w!=Samples.back().response_pattern(0)){w=Samples.back().response_pattern(0); types_number++;}
 	}
 	Samples.pop_back();
 	DATA.close();
-	for(auto &p:Samples)
+	//Control print samples data
+	for(const auto &p:Samples)
 	{
 		p.show_signal();
 	}
-	cout<<"\nSample types_number "<<types_number;
 }
 void configuration(bool &bias, bool &normalization, int &learn_cycles, string &learn_mode, string &outfile, string &net_name,
                   TNet &Brain, vector<TSample> &Samples, vector<TSample> &Analytes)
@@ -96,9 +81,21 @@ void configuration(bool &bias, bool &normalization, int &learn_cycles, string &l
 	int neuron_number;
 	int layer_number;
 
-	vector<TFilter_high> Filtry_progu;
-	string dat;
-	ifstream CONF{"CONF"};
+	vector<TFilter_high> Filters_trshd;
+	string dat="CONF";
+	ifstream CONF{dat};
+	try{
+		if(!CONF)
+		{
+			throw runtime_error("Configuration file "+dat+" not found");
+		}
+	}
+	catch(exception &ex)
+	{
+		cout<<endl<<ex.what();
+		exit(-1);
+	}
+	//if(!CONF){cout<<"\nNie ma takiego pliku!"; return;}
 	while(dat!="EOF")
 	{
 		CONF>>dat;
@@ -111,6 +108,12 @@ void configuration(bool &bias, bool &normalization, int &learn_cycles, string &l
 		if(dat=="struct")
 		{
 			CONF>>net_architecture;
+			if(net_architecture=="read_from_file")
+			{
+				string saved_net;
+				CONF>>saved_net;
+				Brain=TNet(saved_net);
+			}
 			if(net_architecture=="manual")
 			{
 				string istr;
@@ -131,7 +134,7 @@ void configuration(bool &bias, bool &normalization, int &learn_cycles, string &l
 					Neurons.clear();
 				}
 			}
-			if(net_architecture!="manual")
+			if(net_architecture!="manual"&&net_architecture!="read_from_file")
 			{
 				Brain=TNet(layer_number, neuron_number, input_number, 
 				net_architecture, neuron_type, bias);
@@ -200,7 +203,7 @@ void configuration(bool &bias, bool &normalization, int &learn_cycles, string &l
 					}
 					CONF>>label;
 				}
-				Filtry_progu.push_back(TFilter_high(channels, thresholds, high_pass));
+				Filters_trshd.push_back(TFilter_high(channels, thresholds, high_pass));
 				CONF>>layer;
 			}
 		}
@@ -208,21 +211,14 @@ void configuration(bool &bias, bool &normalization, int &learn_cycles, string &l
 		if(dat=="savenet"){CONF>>net_name;}
 		if(dat=="cycle"){CONF>>learn_cycles;}
 	}
+
 	CONF.close();
 	if(normalization){normalize(Samples); normalize(Analytes);}	
-	cout<<"SAMPLES "<<Samples.size()<<"\tSIGNALS "<<Samples[0].signal_number()<<fixed<<setprecision(3)<<showpos;
-	
-	//if(Brain.output_number()<types_number)
-	//{
-		//cout<<"\nSieć ma mniej WYJŚĆ niż yes typów w zbiorze danych. Czy "
-		//"kontynuować pracę? 1 - tak, 0 - nie\n";
-		//bool praca;
-		//cin>>praca;
-		//if(praca==0){return 0;}
-	//}
+	cout<<"\nSAMPLES "<<Samples.size()<<"\tANALYTES "<<Analytes.size()<<"\tSIGNALS "<<Samples[0].signal_number();
 }
 void net_learning(string learn_mode, int learn_cycles, bool normalization, TNet &Brain, vector<TSample> Samples)
 {
+	if(learn_mode=="none"){return;}
 	double learn_rate=0.6;
 	bool forced=false;
 	if(learn_mode=="swob_fors")
@@ -275,7 +271,6 @@ void net_learning(string learn_mode, int learn_cycles, bool normalization, TNet 
 		for(int cycle=0; cycle<learn_cycles; cycle++)
 		{
 			vector<double> weights;
-			//learn_rate=.3;
 			learn_rate=0.3*(1.0-1.0*cycle/learn_cycles);
 			//learn_rate=1-3.9*pow(learn_rate-0.5,2);
 			//cout<<"\n"<<cycle<<"\t"<<learn_rate;
@@ -283,28 +278,13 @@ void net_learning(string learn_mode, int learn_cycles, bool normalization, TNet 
 			{
 				Brain.unsupervised_learning(Samples[sample],  learn_rate, weights, normalization, forced);
 			}
-			//for(auto &w:weights){cout<<w<<"\t";}
 			random_shuffle(Samples.begin(), Samples.end());
 		}
 	}
-	
-	//if(learn_mode=="swob_kon")
-	//{
-		//for(int cycle=0; cycle<learn_cycles; cycle++)
-		//{
-			//learn_rate=0.3*(1.0-1.0*cycle/learn_cycles);
-			//for(unsigned int sample=0; sample<Samples.size(); sample++)
-			//{
-				//Brain.uczenie_nienadzorowane_z_konkurencja(*Samples[sample].signals(),  learn_rate, normalization);
-				////Brain.show_weights();cout<<"\t"<<cycle<<"\t"<<learn_rate;
-			//}
-			//random_shuffle(Samples.begin(), Samples.end());
-		//}
-	//}
 }
 void analysis(TNet Brain, vector<TSample> Samples, vector<TSample> Analytes, string outfile)
 {
-	//Obliczenie responses na wszystkie próbki
+	//Response determination
 	for(auto &a:Analytes)
 	{
 		Samples.push_back(a);
@@ -315,7 +295,7 @@ void analysis(TNet Brain, vector<TSample> Samples, vector<TSample> Analytes, str
 		Responses.push_back(Brain.responses(Samples[pro]));
 	}
 	Responses.shrink_to_fit();
-	//Nagłówek prototypów
+	//Prototype header
 	///Znalezienie najdłuższego stringu
 	uint m=0;
 	for(int label=0; label<Samples[0].signal_number(); label++)
@@ -357,7 +337,7 @@ void analysis(TNet Brain, vector<TSample> Samples, vector<TSample> Analytes, str
 		}
 		RES<<"\n";
 	}
-	//Raport z analizy próbek
+	//Sample analysis report
 	RES<<"\nLABEL\tGROUP";
 	for(int i=0; i<Samples[0].signal_number(); i++)
 	{
