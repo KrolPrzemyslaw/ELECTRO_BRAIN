@@ -6,17 +6,12 @@ using namespace std;
 ///STRUCTUR: SAMPLE FOR NEURON NET ANALYSIS*****************************
 struct TSample
 {
+	///Assign labels - static member definition
+	static void assign_labels(vector<string> labels){Labels=labels;}
 	///Constructors*****************************************************
 	TSample(vector<double> &signals, vector<double> &response_patterns)
 	{
 		Signals=signals; Response_patterns=response_patterns;
-	}
-	TSample(vector<string> &labels, vector<double> &signals, vector<double> &response_patterns)
-	{
-		Labels=labels;
-		Labels.shrink_to_fit();
-		Signals=signals; 
-		Response_patterns=response_patterns;
 	}
 	///Print signal and patterns representing the sample****************
 	void show_signal() const
@@ -26,12 +21,14 @@ struct TSample
 		cout<<"|\t";
 		for(unsigned int w=0; w<Response_patterns.size(); w++){cout<<Response_patterns[w]<<" ";}
 	}
+	///Return number of signal labels***********************************
+	static int label_number(){return Labels.size();}
 	///Return string with label of target signal channel****************
-	string label(int sig)const{return Labels[sig];}
+	static string label(int sig){return Labels[sig];}
 	///Return number of signal representing the sample******************
 	int signal_number()const{return Signals.size();}
 	///Return target sample signal**************************************
-	double sygnal(int s)const{return Signals[s];}
+	double signal(int s)const{return Signals[s];}
 	///Return pointer to the signal vector******************************
 	vector<double>* signals(){return &Signals;}
 	///Return number of response patterns signal repr. the sample*******
@@ -42,11 +39,12 @@ struct TSample
 	vector<double>* response_patterns(){return &Response_patterns;}
 	///Private data*****************************************************
 	private:
-	vector<string> Labels;
+	static vector<string> Labels;
 	vector<double> Signals;
 	vector<double> Response_patterns;
 	friend void normalize(vector<TSample> &samples);
 };
+vector<string> TSample::Labels={""};
 ///*********************************************************************
 void normalize(vector<TSample> &samples)
 {

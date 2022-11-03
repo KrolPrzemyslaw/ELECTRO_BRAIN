@@ -9,7 +9,7 @@ struct TFilter_base
 		Channels=channels;
 	}
 	///Filtering function***********************************************
-	virtual bool operator ()(vector<double>sygnal)=0;
+	virtual bool operator ()(vector<double>signal)=0;
 	///Protected data***************************************************
 	protected:
 	vector<uint> Channels;
@@ -23,12 +23,12 @@ struct TFilter_yes : public TFilter_base
 		Yes=yes;
 	}
 	///Filtering function***********************************************
-	bool operator()(vector<double> sygnal) override
+	bool operator()(vector<double> signal) override
 	{
 		bool allow=true;
 		for(auto &k:Channels)
 		{
-			if(bool(sygnal[k])!=Yes)
+			if(bool(signal[k])!=Yes)
 			{
 				allow=false;
 				break;
@@ -50,14 +50,14 @@ struct TFilter_high : public TFilter_base
 		High_pass=high_pass;
 	}
 	///Filtering function***********************************************
-	bool operator()(vector<double> sygnal) override
+	bool operator()(vector<double> signal) override
 	{
 		bool allow=true;
 		if(High_pass)
 		{
 			for(uint kan=0; kan<Channels.size(); kan++)
 			{
-				if(sygnal[Channels[kan]]<=Thresholds[kan])
+				if(signal[Channels[kan]]<=Thresholds[kan])
 				{
 					allow=false;
 					break;
@@ -68,7 +68,7 @@ struct TFilter_high : public TFilter_base
 		{
 			for(uint kan=0; kan<Channels.size(); kan++)
 			{
-				if(sygnal[Channels[kan]]>=Thresholds[kan])
+				if(signal[Channels[kan]]>=Thresholds[kan])
 				{
 					allow=false;
 					break;

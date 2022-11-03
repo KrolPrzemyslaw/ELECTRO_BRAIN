@@ -433,7 +433,7 @@ struct TNet
 		{
 			for(const auto &neu:lay.Neurons)
 			{
-				empty=false; break;
+				empty=false; break; neu.show_weights();
 			}
 		}
 		return empty;

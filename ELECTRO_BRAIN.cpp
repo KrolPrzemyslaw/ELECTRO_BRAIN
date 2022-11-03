@@ -13,10 +13,11 @@ void read_samples(string infile, vector<TSample> &Samples, bool normalization);
 void configuration(bool &bias, bool &normalization, int &learn_cycles, string &learn_mode, string &outfile, string &net_name, 
                   TNet &Brain, vector<TSample> &Samples, vector<TSample> &Analytes);
 void net_learning(string learn_mode, int learn_cycles, bool normalization, TNet &Brain, vector<TSample> Samples);
-void analysis(TNet Brain, vector<TSample> Samples, vector<TSample> Analytes, string outfile);
+void analysis(TNet &Brain, vector<TSample> &Samples, vector<TSample> &Analytes, string outfile);
 /////////////////////////////////////////////////////////////////////////
 int main()
 {
+//Basic data declaration
 vector<TSample> Samples;
 vector<TSample> Analytes;
 bool bias=false;
@@ -26,10 +27,19 @@ string learn_mode;
 string outfile;
 string net_name;
 TNet Brain;
+//Data reading and validity control
 configuration(bias, normalization, learn_cycles, learn_mode, outfile, net_name, Brain, Samples, Analytes);
+try{if(Samples.empty()){throw runtime_error("Samples vector empty - nothing to learn from!");}}
+catch(exception &ex){cout<<endl<<ex.what();exit(-1);}
+try{if(Brain.is_empty()){throw runtime_error("Brain lobotomized - empty neural net!");}}
+catch(exception &ex){cout<<endl<<ex.what();exit(-1);}
+try{if(Analytes.empty()){throw runtime_error("Analytes vector empty - nothing to analyze!");}}
+catch(exception &ex){cout<<endl<<ex.what();exit(-1);}
+//Net learning
 net_learning(learn_mode, learn_cycles, normalization, Brain, Samples);
 Brain.save_net(net_name);
 Brain.show_weights();
+//Analysis
 Brain.free_filters();
 analysis(Brain, Samples, Analytes, outfile);
 ////////////////////////////////////////////////////////////////////////
@@ -38,13 +48,14 @@ void read_samples(string infile, vector<TSample> &Samples, bool normalization)
 {
 	//Read labels
 	ifstream DATA{infile};
-	vector<string> labels;
 	{
+		vector<string> labels;
 		string dat;
 		while(DATA>>dat&&dat!="EoE")
 		{
 			labels.push_back(dat);
 		}
+		TSample::assign_labels(labels);
 	}
 	//Read samples
 	vector<double> signals;
@@ -54,14 +65,14 @@ void read_samples(string infile, vector<TSample> &Samples, bool normalization)
 	{
 		signals.clear(); 
 		response_patterns.clear();
-		for(unsigned int sig=0; sig<labels.size(); sig++)
+		for(int sig=0; sig<TSample::label_number(); sig++)
 		{
 			DATA>>s; 
 			signals.push_back(s);
 		}
 		DATA>>s; 
 		response_patterns.push_back(s);
-		Samples.push_back(TSample(labels, signals, response_patterns));
+		Samples.push_back(TSample(signals, response_patterns));
 	}
 	Samples.pop_back();
 	DATA.close();
@@ -80,22 +91,11 @@ void configuration(bool &bias, bool &normalization, int &learn_cycles, string &l
 	int input_number;
 	int neuron_number;
 	int layer_number;
-
 	vector<TFilter_high> Filters_trshd;
 	string dat="CONF";
 	ifstream CONF{dat};
-	try{
-		if(!CONF)
-		{
-			throw runtime_error("Configuration file "+dat+" not found");
-		}
-	}
-	catch(exception &ex)
-	{
-		cout<<endl<<ex.what();
-		exit(-1);
-	}
-	//if(!CONF){cout<<"\nNie ma takiego pliku!"; return;}
+	try{if(!CONF){throw runtime_error("Configuration file "+dat+" not found");}}
+	catch(exception &ex){cout<<endl<<ex.what();exit(-1);}
 	while(dat!="EOF")
 	{
 		CONF>>dat;
@@ -144,6 +144,10 @@ void configuration(bool &bias, bool &normalization, int &learn_cycles, string &l
 		if(dat=="learn"){CONF>>learn_mode;}
 		if(dat=="filter_yes"||dat=="filter_no")
 		{
+			//Brain existence control
+			try{if(Brain.is_empty()){throw runtime_error("Brain lobotomized - nowhere to assign filter!");}}
+			catch(exception &ex){cout<<endl<<ex.what();exit(-1);}
+			
 			bool yes=true;
 			if(dat=="filter_no"){yes=false;}
 			int layer;
@@ -174,6 +178,10 @@ void configuration(bool &bias, bool &normalization, int &learn_cycles, string &l
 		}
 		if(dat=="filtr_gorny"||dat=="filtr_dolny")
 		{
+			//Brain existence control
+			try{if(Brain.is_empty()){throw runtime_error("Brain lobotomized - nowhere to assign filter!");}}
+			catch(exception &ex){cout<<endl<<ex.what();exit(-1);}
+			
 			bool high_pass=true;
 			if(dat=="filtr_dolny"){high_pass=false;}
 			int layer;
@@ -282,53 +290,46 @@ void net_learning(string learn_mode, int learn_cycles, bool normalization, TNet 
 		}
 	}
 }
-void analysis(TNet Brain, vector<TSample> Samples, vector<TSample> Analytes, string outfile)
+void analysis(TNet &Brain, vector<TSample> &Samples, vector<TSample> &Analytes, string outfile)
 {
-	//Response determination
-	for(auto &a:Analytes)
-	{
-		Samples.push_back(a);
-	}
-	vector<vector<double>> Responses;
-	for(uint pro=0; pro<Samples.size(); pro++)
-	{
-		Responses.push_back(Brain.responses(Samples[pro]));
-	}
-	Responses.shrink_to_fit();
+	//Unify Samples and Analytes vectors 
+	move(Analytes.begin(), Analytes.end(), back_inserter(Samples));
+	Analytes.clear();
 	//Prototype header
-	///Znalezienie najdłuższego stringu
+	///Find longest string
 	uint m=0;
-	for(int label=0; label<Samples[0].signal_number(); label++)
+	for(int label=0; label<TSample::label_number(); label++)
 	{
-		if(Samples[0].label(label).length()>m){m=Samples[0].label(label).length();}
+		if(TSample::label(label).length()>m){m=TSample::label(label).length();}
 	}
 	///Otwarcie pliku
 	ofstream RES{outfile+".txt"};
 	RES<<fixed<<setprecision(3);
 	for(int lay=0; lay<Brain.layer_number(); lay++)
 	{
+		///Column headers as neuron 'out' of layer 'lay': Nout/lay
 		RES<<setw(m)<<" ";
 		for(int out=0; out<Brain.output_number(lay); out++)
 		{
 			RES<<"\tN"<<out<<"/"<<lay;
 		}
-		RES<<"\n";//<<showpos;
-		int input_number;
-		{input_number=Brain.input_number(lay);}
-		
-		for(int inp=0; inp<input_number; inp++)
+		RES<<"\n";
+		///Weights assigned by neuron to its input
+		for(int inp=0; inp<Brain.input_number(); inp++)
 		{
+			///Left margin column: input names as sample labels
 			if(lay==0)
 			{
 				if(inp<Samples[0].signal_number()){RES<<setw(m)<<Samples[0].label(inp);}
 				if(inp==Samples[0].signal_number()){RES<<setw(m)<<"BIAS";}
 			}
+			///Left margin column: input names as preceding neuron numbers
 			if(lay>=1)
 			{
 				if(inp<Brain.neuron_number(lay-1)){RES<<setw(m)<<"N"<<inp<<"/"<<lay-1;}
 				if(inp==Brain.neuron_number(lay-1)){RES<<setw(m)<<"BIAS";}
-				
 			}
+			///Print weight
 			for(int neu=0; neu<Brain.output_number(lay); neu++)
 			{
 				RES<<"\t"<<Brain.weight_n(lay, neu, inp);
@@ -338,26 +339,24 @@ void analysis(TNet Brain, vector<TSample> Samples, vector<TSample> Analytes, str
 		RES<<"\n";
 	}
 	//Sample analysis report
+	///Header with sample labels, net-assigned group, signam labels names and output neuron responses
 	RES<<"\nLABEL\tGROUP";
-	for(int i=0; i<Samples[0].signal_number(); i++)
-	{
-		RES<<"\t"<<Samples[0].label(i).substr(0,7);
-	}
-	for(int i=0; i<Brain.output_number(); i++)
-	{
-		RES<<"\tRES_"<<noshowpos<<i;
-	}
-	//RES<<showpos;
+	for(int i=0; i<Samples[0].signal_number(); i++){RES<<"\t"<<Samples[0].label(i).substr(0,7);}
+	for(int i=0; i<Brain.output_number(); i++){RES<<"\tRES_"<<noshowpos<<i;}
+	vector<vector<double>> Responses;
+	for(uint pro=0; pro<Samples.size(); pro++){Responses.push_back(Brain.responses(Samples[pro]));}
+	Responses.shrink_to_fit();
+	///Table with values
 	for(uint sample=0; sample<Samples.size(); sample++)
 	{
-		//if(sample>0)
-		//{if(Samples[sample].response_pattern(0)!=Samples[sample-1].response_pattern(0)){RES<<"\n";}}
+		///Response patterns predefined in sample definition
 		vector<double>Response_patterns=*Samples[sample].response_patterns();
 		RES<<"\n";
-		for(auto w:Response_patterns)
+		for(const auto &w:Response_patterns)
 		{
 			RES<<w<<"\t";
 		}
+		///Selection of most activated output neuron
 		double RESP=0;
 		int m;
 		for(uint resp=0; resp<Responses[sample].size(); resp++)
@@ -365,11 +364,13 @@ void analysis(TNet Brain, vector<TSample> Samples, vector<TSample> Analytes, str
 			if((Responses[sample][resp])>RESP){RESP=Responses[sample][resp]; m=resp;}
 		}
 		RES<<"PRO_"<<noshowpos<<m<<"\t";
+		///Sample signals predefined in sample definition
 		for(int s=0; s<Samples[sample].signal_number(); s++)
 		{
-			RES<<Samples[sample].sygnal(s);
+			RES<<Samples[sample].signal(s);
 			if(s<Samples[sample].signal_number()-1){RES<<"\t";}
 		}
+		///Outpu neurons responses
 		for(uint resp=0; resp<Responses[sample].size(); resp++)
 		{
 			RES<<"\t"<<Responses[sample][resp];
