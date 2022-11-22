@@ -14,7 +14,7 @@ void configuration(bool &bias, bool &normalization, int &learn_cycles, string &l
                   TNet &Brain, vector<TSample> &Samples, vector<TSample> &Analytes);
 void net_learning(string learn_mode, int learn_cycles, bool normalization, TNet &Brain, vector<TSample> Samples);
 void analysis(TNet &Brain, vector<TSample> &Samples, vector<TSample> &Analytes, string outfile);
-/////////////////////////////////////////////////////////////////////////
+void check_major_exceptions(const vector<TSample> &Samples, const vector<TSample> &Analytes, const TNet &Brain);
 int main()
 {
 //Basic data declaration
@@ -29,15 +29,11 @@ string net_name;
 TNet Brain;
 //Data reading and validity control
 configuration(bias, normalization, learn_cycles, learn_mode, outfile, net_name, Brain, Samples, Analytes);
-try{if(Samples.empty()){throw runtime_error("Samples vector empty - nothing to learn from!");}}
-catch(exception &ex){cout<<endl<<ex.what();exit(-1);}
-try{if(Brain.is_empty()){throw runtime_error("Brain lobotomized - empty neural net!");}}
-catch(exception &ex){cout<<endl<<ex.what();exit(-1);}
-try{if(Analytes.empty()){throw runtime_error("Analytes vector empty - nothing to analyze!");}}
-catch(exception &ex){cout<<endl<<ex.what();exit(-1);}
+check_major_exceptions(Samples, Analytes, Brain);
 //Net learning
 net_learning(learn_mode, learn_cycles, normalization, Brain, Samples);
 Brain.save_net(net_name);
+cout<<fixed<<setprecision(3);
 Brain.show_weights();
 //Analysis
 Brain.free_filters();
@@ -280,8 +276,6 @@ void net_learning(string learn_mode, int learn_cycles, bool normalization, TNet 
 		{
 			vector<double> weights;
 			learn_rate=0.3*(1.0-1.0*cycle/learn_cycles);
-			//learn_rate=1-3.9*pow(learn_rate-0.5,2);
-			//cout<<"\n"<<cycle<<"\t"<<learn_rate;
 			for(unsigned int sample=0; sample<Samples.size(); sample++)
 			{
 				Brain.unsupervised_learning(Samples[sample],  learn_rate, weights, normalization, forced);
@@ -377,4 +371,13 @@ void analysis(TNet &Brain, vector<TSample> &Samples, vector<TSample> &Analytes, 
 		}
 	}
 	RES.close();	
+}
+void check_major_exceptions(const vector<TSample> &Samples, const vector<TSample> &Analytes, const TNet &Brain)
+{
+	try{if(Samples.empty()){throw runtime_error("Samples vector empty - nothing to learn from!");}}
+	catch(exception &ex){cout<<endl<<ex.what();exit(-1);}
+	try{if(Brain.is_empty()){throw runtime_error("Brain lobotomized - empty neural net!");}}
+	catch(exception &ex){cout<<endl<<ex.what();exit(-1);}
+	try{if(Analytes.empty()){throw runtime_error("Analytes vector empty - nothing to analyze!");}}
+	catch(exception &ex){cout<<endl<<ex.what();exit(-1);}
 }

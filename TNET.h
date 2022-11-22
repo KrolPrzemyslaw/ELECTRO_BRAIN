@@ -5,13 +5,10 @@
 #include<random>
 using namespace std;
 #include "TFILTER.h"
-//Constants
 constexpr double pi(){return 3.14159265358979;}
 constexpr double e(){return 2.718281828459;}
-///STRUCTURE: NEURON
 struct TNeuron
 {
-	///Constructors*****************************************************
 	TNeuron(int input_number, string type, bool bias=false)
 	{
 		random_device rd;
@@ -63,7 +60,6 @@ struct TNeuron
 		if(Type=="cos"){Resp_ptr=&TNeuron::resp_cos;}
 		Weights=weights;
 	}
-	///Neuron response functions****************************************
 	double resp_lin(double X){return X;}
 	double resp_slin(double X){return 2*(X-0.5);}
 	double resp_hlin(double X){double Y=X; if(fabs(Y)>1){Y/=fabs(Y);}return Y;}
@@ -73,7 +69,6 @@ struct TNeuron
 	double resp_tgh(double X){return tanh(X*pi());;}
 	double resp_sin(double X){return sin(X*pi()*0.5);}
 	double resp_cos(double X){return cos(X*pi()*0.5);}
-	///Neuron response to input signal vector***************************
 	double response(vector<double> input_signals)
 	{
 		double X=0, Y=0;
@@ -88,7 +83,6 @@ struct TNeuron
 		}
 		return Y;
 	}
-	///Derivative of neuron response to input signal vector*************
 	double derivative(vector<double> input_signals)
 	{
 		double X=0;
@@ -103,7 +97,6 @@ struct TNeuron
 		if(Type=="tgh"){Y=tanh(X*pi()); Y1=(1+Y)*(1-Y);}
 		return Y1;
 	}
-	///Assigning input signal filters to the neuron*********************
 	void add_filters(TFilter_yes filter_yes)
 	{
 		Filters_yes.push_back(filter_yes);
@@ -112,13 +105,11 @@ struct TNeuron
 	{
 		Filters_high.push_back(filter_high);
 	}
-	///Releasing input signal filters***********************************
 	void free_filters()
 	{
 		Filters_yes.clear();
 		Filters_high.clear();
 	}
-	///Boolean function for input signal acceptance*********************
 	bool allow_signal(vector<double> input_signals)
 	{
 		bool allow=true;
@@ -140,7 +131,6 @@ struct TNeuron
 		}
 		return allow;
 	}
-	///Show input signal weights****************************************
 	void show_weights()const
 	{
 		cout<<"(";
@@ -151,7 +141,6 @@ struct TNeuron
 		}
 		cout<<")<"<<Type; if(Bias){cout<<", biased";}cout<<">";
 	}
-	///Neuron learning**************************************************
 	double unsupervised_learning(vector<double> input_signals, double learn_rate, bool normalization)
 	{
 		double Y=response(input_signals);
@@ -174,42 +163,6 @@ struct TNeuron
 		}
 		return Y;
 	}
-	//void forced_unsupervised_learning(vector<double> input_signals, double response_pattern, 
-	//double learn_rate, bool normalization)
-	//{
-		////double Y=response(input_signals);
-		////double sw[Weights.size()];
-		//for(unsigned int inp=0; inp<Weights.size(); inp++)
-		//{	
-			////sw[inp]=Weights[inp];
-			//Weights[inp]+=learn_rate*(response_pattern-Weights[inp]);//+0.6*learn_rate*(Weights[inp]-sw[inp]);
-		//}
-		////if(Bias){Weights.back()+=1.0*Y*learn_rate;}
-		////normalization wag wejść neuronów
-		//if(normalization)
-		//{	
-			//double WM=0;
-			//for(auto &w:Weights)
-			//{
-				//WM+=pow(w,2);
-			//}
-			//for(auto &w:Weights)
-			//{
-				//w/=sqrt(WM);
-			//}
-		//}
-	//}
-	//void supervised_learning(vector<double> input_signals, double error, double learn_rate)
-	//{
-		//double Y=response(input_signals);
-		//double Y1=derivative(input_signals);
-		//for(unsigned int inp=0; inp<Weights.size(); inp++)
-		//{
-			//Weights[inp]+=
-			//input_signals[inp]*Y*Y1*error*learn_rate;
-		//}
-	//}
-	///private data*****************************************************
 	private:
 	vector<double> Weights;
 	string Type;
@@ -221,10 +174,8 @@ struct TNeuron
 	friend struct TLayer;
 	friend struct TNet;
 };
-///STRUCTURE: NEURON LAYER**********************************************
 struct TLayer
 {
-	///Constructor******************************************************
 	TLayer(int neuron_number, int input_number, string type, bool bias)
 	{
 		if(type!="amp"&&type!="sel"&&type!="pol")
@@ -243,12 +194,10 @@ struct TLayer
 			}
 		}
 	}
-	///Constructor******************************************************
 	TLayer(vector<TNeuron> neurons)
 	{
 		Neurons=neurons;
 	}
-	///Print input signal weights for entire layer**********************
 	void show_weights()const
 	{
 		for(auto &n:Neurons)
@@ -257,7 +206,6 @@ struct TLayer
 			cout<<"   ";
 		}
 	}
-	///Layer responses vector for given input vector********************
 	vector<double> responses(vector<double> input_signals)
 	{
 		vector<double> resp;
@@ -267,7 +215,6 @@ struct TLayer
 		}
 		return resp;
 	}
-	///Derivatives of layer responses for given input vector************
 	vector<double> derivatives(vector<double> input_signals)
 	{
 		vector<double> drv;
@@ -277,7 +224,6 @@ struct TLayer
 		}
 		return drv;
 	}
-	///Unsupervised learning, returning response vector*****************
 	vector<double> unsupervised_learning(vector<double> input_signals, 
 	double learn_rate, bool normalization)
 	{
@@ -288,42 +234,18 @@ struct TLayer
 		}
 		return resp;
 	}
-	//void forced_unsupervised_learning(
-	//vector<double> input_signals, vector<double> response_patterns, 
-	//double learn_rate, bool normalization)
-	//{
-		////vector<double> resp;
-		//for(unsigned int neu=0; neu<Neurons.size(); neu++)
-		//{
-			////resp.push_back(
-			//Neurons[neu].forced_unsupervised_learning(input_signals, response_patterns[neu], learn_rate, normalization);
-			////);
-		//}
-	//}
-	//vector<double> unsupervised_learning(int neuron, vector<double> input_signals, 
-	//double learn_rate, bool normalization, bool bias)
-	//{
-		//double resp=Neurons[neuron].unsupervised_learning(input_signals, learn_rate, stalosc_wag, normalization, bias);
-		//return {resp};
-	//}
-	///Return number of neurons in layer********************************
 	int neuron_number()const{return Neurons.size();}
-	///Return number of inputs per neuron*******************************
 	int input_number()const{return Neurons[0].Weights.size();}
-	///Adding neuron to the layer***************************************
 	void operator +=(TNeuron neuron)
 	{
 		Neurons.push_back(neuron);
 	}
-	///Private data*****************************************************
 	private:
 	vector<TNeuron> Neurons;
 	friend struct TNet;
 };
-///STRUCTURE: NEURON NET************************************************
 struct TNet
 {
-	///Constructors*****************************************************
 	TNet(){}
 	TNet(int layer_number, int neuron_number, int input_number, string structure, string type, bool bias)
 	{
@@ -359,12 +281,10 @@ struct TNet
 		if(type=="log")
 		{
 			Layers.push_back(TLayer(neurons_in_layer[0],input_number, "amp", bias));
-			//Layers.push_back(TLayer(neurons_in_layer[1],input_number, "prod"));
 			for(int lay=1; lay<layer_number; lay++)
 			{
 				Layers.push_back(TLayer(neurons_in_layer[lay], Layers[lay-1].neuron_number(), "sig", bias));
 			}
-			//Layers.push_back(TLayer(neurons_in_layer[layer_number-1], Layers.back().neuron_number(), "tgh", Bias));	
 		}
 		if(type!="log")
 		{
@@ -404,17 +324,14 @@ struct TNet
 		}
 		NET.close();
 	}
-	///Assign yes filter to target neuron in layer**********************
 	void assign_filter(int layer, int neuron, TFilter_yes filter_yes)
 	{
 		Layers[layer].Neurons[neuron].add_filters(filter_yes);
 	}
-	///Assign high filter to target neuron in layer*********************
 	void assign_filter(int layer, int neuron, TFilter_high filter_high)
 	{
 		Layers[layer].Neurons[neuron].add_filters(filter_high);
 	}
-	///Release all filters on net***************************************
 	void free_filters()
 	{
 		for(uint lay=0; lay<Layers.size(); lay++)
@@ -425,8 +342,7 @@ struct TNet
 			}
 		}
 	}
-	///Checks if net is empty*******************************************
-	bool is_empty()
+	bool is_empty() const
 	{
 		bool empty=true;
 		for(const auto &lay:Layers)
@@ -438,32 +354,26 @@ struct TNet
 		}
 		return empty;
 	}
-	///Return number of neurons in given layer**************************
 	int neuron_number(int lay)const
 	{
 		return Layers[lay].neuron_number();
 	}
-	///Return number of layers******************************************
 	int layer_number()const
 	{
 		return Layers.size();
 	}
-	///Return number of inputs in target layer (for frint by default)***
 	int input_number(int lay=0)const
 	{
 		return Layers[lay].input_number();
 	}
-	///Return number of neurons in last layer***************************
 	int output_number()const
 	{
 		return Layers.back().neuron_number();
 	}
-	///Return number of neurons in target layer*************************
 	int output_number(int lay)const
 	{
 		return Layers[lay].neuron_number();
 	}
-	///Prints input weights for all neurons in net**********************
 	void show_weights()const
 	{
 		for(auto &w:Layers)
@@ -472,13 +382,10 @@ struct TNet
 			w.show_weights();
 		}
 	}
-	///Returns weight at target input of target neuron******************
 	double weight(int lay, int neu, int inp)const
 	{
 		return Layers[lay].Neurons[neu].Weights[inp];
 	}
-	///Return weight of target input, normalized by highest weight in
-	///target neuron's layer
 	double weight_n(int lay, int neu, int inp)const
 	{
 		double norm=0;
@@ -491,17 +398,14 @@ struct TNet
 		}	
 		return Layers[lay].Neurons[neu].Weights[inp]/norm;
 	}
-	///Assignes prescribed value to target input************************
 	void assign_weight(int layer, int neuron, int input, double weight)
 	{
 		Layers[layer].Neurons[neuron].Weights[input]=weight;
 	}
-	///Changes target weight by gived value*****************************
 	void change_weight(int layer, int neuron, int input, double dw)
 	{
 		Layers[layer].Neurons[neuron].Weights[input]+=dw;
 	}
-	///Returns net response to given sample*****************************
 	vector<double> responses(TSample sample)
 	{
 		vector<double> signals=Layers[0].responses(*sample.signals());
@@ -511,22 +415,6 @@ struct TNet
 		}
 		return signals;
 	}
-	//vector<double> responses(vector<double> input_signals,
-	 //vector<vector<double>> &Y, vector<vector<double>> &Y1)
-	//{
-		//vector<double> signals=Layers[0].responses(input_signals);
-		//Y.push_back(signals);
-		//Y1.push_back(Layers[0].derivatives(input_signals));
-		//for(unsigned int lay=1; lay<Layers.size(); lay++)
-		//{
-			//Y1.push_back(Layers[lay].derivatives(signals));
-		
-			//signals=Layers[lay].responses(signals);
-			//Y.push_back(signals);
-		//}
-		//return signals;
-	//}
-	///Net unsupervied learning, return void****************************
 	void unsupervised_learning(TSample &sample, double learn_rate, 
 	vector<double> &weights, bool normalization, bool forced=false)
 	{
@@ -538,8 +426,6 @@ struct TNet
 		if(forced)
 		{
 			cout<<"\nFeature not implemented yet! Learning without forced mode";
-			//vector<double> response_patterns=*sample.response_patterns();
-			//Layers.back().forced_unsupervised_learning(signals, response_patterns, learn_rate, normalization);
 		}
 		weights.clear();
 		for(uint lay=0; lay<Layers.size(); lay++)
@@ -553,85 +439,6 @@ struct TNet
 			}
 		}
 	}
-	//void uczenie_nienadzorowane_z_konkurencja(vector<double> input_signals, double learn_rate, bool normalization)
-	//{
-		//vector<double> signals=Layers[0].responses(input_signals, Bias);
-		//double y=0;
-		//int m;
-		//for(uint s=0; s<signals.size(); s++)
-		//{
-			//if(fabs(signals[s])>fabs(y))
-			//{
-				//y=signals[s];
-				//m=s;
-			//}
-		//}
-		//cout<<"\nUczę neuron "<<m;
-		//Layers[0].unsupervised_learning(m, signals, learn_rate, normalization, Bias);
-		
-		//for(unsigned int lay=1; lay<Layers.size(); lay++)
-		//{
-			//signals=Layers[lay].responses(signals, Bias);
-			
-			//y=0;
-			//for(uint s=0; s<signals.size(); s++)
-			//{
-				//if(fabs(signals[s])>fabs(y))
-				//{
-					//y=signals[s];
-					//m=s;
-				//}
-			//}
-			//Layers[lay].uczenie_nienadzorowane_z_kontrastem(m, signals, learn_rate, normalization, Bias);
-		//}
-	//}
-	//vector<double> bledy(vector<double> input_signals, vector<double> response_patterns,
-	 //vector<vector<double>> &Y, vector<vector<double>> &Y1)
-	//{
-		///*uwaga - przy uczeniu nadzorozwanym
-		 //* jeżeli wzorców może być mniej niż sygnałów wyjściowych
-		 //* wtedy zaczną się po wyczerpaniu powtarzać od początku
-		 //* jeżeli wzorców będzie więcej to załąpią się tylko pierwsze
-		//*/
-		//vector<double> bledy=responses(input_signals, Y, Y1);
-		//unsigned int wz=0;
-		//for(unsigned int ble=0; ble<bledy.size(); ble++)
-		//{
-			//bledy[ble]=response_patterns[wz]-bledy[ble];
-			//wz++; if(wz==response_patterns.size()-1){wz=0;}
-		//}
-		//return bledy;
-	//}
-	//void supervised_learning(vector<double> input_signals, vector<double> response_patterns, double learn_rate)
-	//{
-		//vector<vector<double>> Y, Y1;
-		//vector<double> delta=bledy(input_signals, response_patterns, Y, Y1);
-		////cout<<"\nX:";
-		////for(auto &x:input_signals)
-		////{
-			////cout<<x<<" ";
-		////}
-		////cout<<"\n\tWartości sygnałów";
-		////for(unsigned int y=0; y<Y.size(); y++)
-		////{
-			////cout<<"\n\t";
-			////for(unsigned int yy=0; yy<Y[y].size(); yy++)
-			////{
-				////cout<<Y[y][yy]<<"\t";
-			////}
-		////}
-		////cout<<"\n\tWartości pochodnych";
-		////for(unsigned int y=0; y<Y.size(); y++)
-		////{
-			////cout<<"\n\t";
-			////for(unsigned int yy=0; yy<Y[y].size(); yy++)
-			////{
-				////cout<<Y1[y][yy]<<"\t";
-			////}
-		////}
-		
-	//}
-	///Save net to ASCII file*******************************************
 	void save_net(string name)const
 	{	
 		cout<<"\nNet saving as "<<name;
@@ -652,15 +459,11 @@ struct TNet
 			NET<<"\n";
 		}
 	}
-
-	///Adding layer to the net******************************************
 	void operator +=(TLayer layer)
 	{
 		Layers.push_back(layer);
 	}
-	///Private data*****************************************************
 	private:
 	vector<TLayer> Layers;
 };
-///*********************************************************************
 #endif
