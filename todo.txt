@@ -1,4 +1,0 @@
-- Implement net saving,
-- Check and correct higher/lower filters,
-- Implement filtering by input number,
-- Test and implement multi-layers nets.
