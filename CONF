@@ -2,7 +2,8 @@ sample	DEITIES
 analys	DEITIES_A
 LAY	1
 struct	manual
-	sig sig sig sig sig sig sig sig eoN
+		Teolog
+		sig sig sig sig sig sig sig sig eoN
 learn	unsu
 filter_yes
 	0 0	LORD eoF
@@ -23,7 +24,6 @@ filter_no
 	-1
 
 cycle	300
-save	RES
-savenet	Teolog
+save	RES	
 EOF
 
