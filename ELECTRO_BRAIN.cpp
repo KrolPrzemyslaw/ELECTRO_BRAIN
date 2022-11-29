@@ -16,12 +16,12 @@ void configuration(TConfiguration_input &Conf, TNet &Brain, vector<TSample> &Sam
 void net_learning(const TConfiguration_input &Conf, TNet &Brain, vector<TSample> Samples);
 void analysis(TNet &Brain, vector<TSample> &Samples, vector<TSample> &Analytes, string outfile);
 void check_major_exceptions(const vector<TSample> &Samples, const vector<TSample> &Analytes, const TNet &Brain);
-int main(){
+void handle_program_arguments(int argc, char* argv[]);
 
-	cout<<"\nWelcome in ELECATRO_BRAIN, version "<<ELECTRO_BRAIN_VERSION_MAJOR<<"."<<ELECTRO_BRAIN_VERSION_MINOR<<
-	"\nCompiled in cpp standard "<<__cplusplus;
+int main(int argc, char* argv[]){
+	handle_program_arguments(argc, argv);
 	//Basic data declaration
-	TConfiguration_input Conf;
+	TConfiguration_input Conf(argv[1]);
 	vector<TSample> Samples;
 	vector<TSample> Analytes;
 	TNet Brain;
@@ -36,8 +36,40 @@ int main(){
 	analysis(Brain, Samples, Analytes, Conf.output_file_name());
 	cout<<"\nELECTRO_BRAIN - job finished\n";
 }
+void handle_program_arguments(int argc, char* argv[]){
+	if(argc==1){
+		return;
+	}
+	if(*argv[1]=='h'){
+		cout<<"ELECTRO_BRAIN, version "<<
+		ELECTRO_BRAIN_VERSION_MAJOR<<"."<<
+		ELECTRO_BRAIN_VERSION_MINOR<<
+		", compiled in cpp standard "<<__cplusplus<<
+		"\nUsage"<<
+		"\n\t./ELECTRO_BRAIN <path-to-configuration-file>"<<
+			"\tExecutes ELECTRO_BRAIN with target configuration file"<<
+		"\n\t./ELECTRO_BRAIN -help\t\t\t\tDisplays this help\n"<<
+
+		"\nConfiguration file structure"<<
+		"\n\tsample\t<learning-samples-file-name>"<<
+		"\n\tanalys\t<analysis-samples-file-name>"<<
+		"\n\tLAY\t<number-of-net-layers>"<<
+		"\n\tstruct\t<net-construction-options>"<<
+		"\n\t\tmanual\t//Indicates manual construction of the net"<<
+		"\n\t\t\t<name-of-the-net>"<<
+		"\n\t\t\t<set-of-activation-functions>//'eoN' for end of current layer definition"<<
+		"\n\tlearn\t<learning-mode-options>"<<
+		"\n\tfilter_yes/filter_no\t//Filter declaration, optional"<<
+		"\n\t\t<number-of-target-layer> <number-of-target-neuron> <set-of-filtered-labels>//'eoF' for end of filter definition"<<
+		"\n\t\t-1 for end of filters set definitions"<<
+		"\n\tcycle\t<number-of-learning-cycles>"<<
+		"\n\tsave\t<name-for-save-results-file>"<<
+		"\n\tEOF\t<end-of-file>\n";
+		exit(0);
+	}
+}
 void read_samples(string infile, vector<TSample> &Samples){
-	//Read labels
+	//Read sample labels
 	ifstream DATA{infile};{
 		vector<string> labels;
 		string dat;
@@ -47,7 +79,7 @@ void read_samples(string infile, vector<TSample> &Samples){
 		}
 		TSample::assign_labels(labels);
 	}
-	//Read samples
+	//Read samples signals
 	vector<double> signals;
 	vector<double> response_patterns;
 	double s=0;
@@ -89,7 +121,7 @@ void configuration(TConfiguration_input &Conf, TNet &Brain, vector<TSample> &Sam
 	int neuron_number;
 	int layer_number;
 	vector<TFilter_high> Filters_trshd;
-	string dat="CONF";
+	string dat=Conf.config_file_name();
 	cout<<"\nConfiguration input file: "<<dat;
 	ifstream CONF{dat};
 	check_input_file_existence(CONF, dat);
