@@ -6,8 +6,9 @@ using namespace std;
 //SŁAWA WELESOWI!
 struct TConfiguration_input{
 
-	TConfiguration_input(){
+	TConfiguration_input(char config_file_name[]){
 		Normalization=true;
+		Config_file_name=config_file_name;
 	}
 	void assign_learn_cycles(int learn_cycles){
 		Learn_cycles=learn_cycles;
@@ -33,10 +34,15 @@ struct TConfiguration_input{
 	string output_file_name()const{
 		return Output_file_name;
 	}
+	string config_file_name()const{
+		return Config_file_name;
+	}
+	
 	private:
 	int Learn_cycles;
 	string Learn_mode;
 	bool Normalization;
 	string Output_file_name;
+	string Config_file_name;
 };
 #endif
