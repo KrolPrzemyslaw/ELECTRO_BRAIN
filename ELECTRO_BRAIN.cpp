@@ -68,9 +68,19 @@ void handle_program_arguments(int argc, char* argv[]){
 		exit(0);
 	}
 }
+void check_input_file_existence(const ifstream &CONF, const string &dat){
+	try{if(!CONF){
+		throw runtime_error("File "+dat+" not found. Program termination\n");}
+	}
+	catch(exception &ex){
+		cout<<endl<<ex.what();exit(-1);
+	}
+}
 void read_samples(string infile, vector<TSample> &Samples){
 	//Read sample labels
-	ifstream DATA{infile};{
+	ifstream DATA{infile};
+	check_input_file_existence(DATA, infile);
+	{
 		vector<string> labels;
 		string dat;
 		while(DATA>>dat&&dat!="EoE")
@@ -104,14 +114,7 @@ bool filter_is_defined_in(const string &dat){
 	}
 	return filter;
 }
-void check_input_file_existence(const ifstream &CONF, const string &dat){
-	try{if(!CONF){
-		throw runtime_error("Configuration file "+dat+" not found");}
-	}
-	catch(exception &ex){
-		cout<<endl<<ex.what();exit(-1);
-	}
-}
+
 void configuration(TConfiguration_input &Conf, TNet &Brain, vector<TSample> &Samples, vector<TSample> &Analytes){
 	bool bias=false;
 	string net_architecture;
@@ -367,11 +370,11 @@ void analysis(TNet &Brain, vector<TSample> &Samples, vector<TSample> &Analytes, 
 		}
 		///Selection of most activated output neuron
 		double RESP=0;
-		int m;
+		int most;
 		for(uint resp=0; resp<Responses[sample].size(); resp++){
-			if((Responses[sample][resp])>RESP){RESP=Responses[sample][resp]; m=resp;}
+			if((Responses[sample][resp])>RESP){RESP=Responses[sample][resp]; most=resp;}
 		}
-		RES<<"PRO_"<<noshowpos<<m<<"\t";
+		RES<<"PRO_"<<noshowpos<<most<<"\t";
 		///Sample signals predefined in sample definition
 		for(int s=0; s<Samples[sample].signal_number(); s++){
 			RES<<Samples[sample].signal(s);

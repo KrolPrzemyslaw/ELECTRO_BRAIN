@@ -288,9 +288,9 @@ void TNet::free_filters(){
 	}
 double TNet::weight_n(int lay, int neu, int inp)const{
 		double norm=0;
-		for(uint inp=0; inp<Layers[lay].Neurons[neu].Weights.size(); inp++){
-			if(fabs(Layers[lay].Neurons[neu].Weights[inp])>norm){
-				norm=Layers[lay].Neurons[neu].Weights[inp];
+		for(uint inps=0; inps<Layers[lay].Neurons[neu].Weights.size(); inps++){
+			if(fabs(Layers[lay].Neurons[neu].Weights[inps])>norm){
+				norm=Layers[lay].Neurons[neu].Weights[inps];
 			}
 		}	
 		return Layers[lay].Neurons[neu].Weights[inp]/norm;
