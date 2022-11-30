@@ -6,11 +6,14 @@ This is open source project on neural net.
 cmake ../ELECTRO_BRAIN
 cmake --build .
 ```
-
+Additionally, ELECTRO_BRAIN may be installed on Linux using:
+```
+sudo cmake --install .
+```
 
 # To run ELECTRO_BRAIN 
 use command line:
 ```
-./ELECTRO_BRAIN conf_file_name	- to run program with selected configuration file
-./ELECTRO_BRAIN h		- to display help, describing configuration file structure
+ELECTRO_BRAIN conf_file_name	- to run program with selected configuration file
+ELECTRO_BRAIN h		- to display help, describing configuration file structure
 ```
