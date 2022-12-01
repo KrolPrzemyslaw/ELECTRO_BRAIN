@@ -36,12 +36,19 @@ int main(int argc, char* argv[]){
 	analysis(Brain, Samples, Analytes, Conf.output_file_name());
 	cout<<"\nELECTRO_BRAIN - job finished\n";
 }
-void handle_program_arguments(int argc, char* argv[]){
-	if(argc==1){
-		return;
+void parse_arguments_to_strings(int argc, char* argv[], vector<string> &arguments){
+	for(int i=0; i<argc; i++){
+		arguments.push_back("");
+		int j=0;
+		while(argv[i][j]!='\0'){
+			arguments[i]+=argv[i][j];
+			j++;
+		}
+		//cout<<"\n"<<i<<" "<<arguments[i];
 	}
-	if(*argv[1]=='h'){
-		cout<<"ELECTRO_BRAIN, version "<<
+}
+void print_help(){
+	cout<<"ELECTRO_BRAIN, version "<<
 		ELECTRO_BRAIN_VERSION_MAJOR<<"."<<
 		ELECTRO_BRAIN_VERSION_MINOR<<
 		", compiled in cpp standard "<<__cplusplus<<
@@ -65,6 +72,32 @@ void handle_program_arguments(int argc, char* argv[]){
 		"\n\tcycle\t<number-of-learning-cycles>"<<
 		"\n\tsave\t<name-for-save-results-file>"<<
 		"\n\tEOF\t<end-of-file>\n";
+}
+void test_neuron(string type, double weight, double signal, bool bias){
+	TNeuron neurone(1, type, {weight}, bias);
+	cout<<fixed<<setprecision(3)<<"Neuron response is "<<neurone.response({signal})<<endl;
+}
+void test_feature(vector<string> &arguments){
+	if(arguments[2]=="-n"){
+		string type=arguments[3];
+		double weight=stof(arguments[4]);
+		double signal=stof(arguments[5]);
+		bool bias=stoi(arguments[6]);
+		test_neuron(type, weight, signal, bias);
+	}
+}
+void handle_program_arguments(int argc, char* argv[]){
+	vector<string> arguments;
+	parse_arguments_to_strings(argc, argv, arguments);
+	if(argc<=1){
+		exit(0);
+	}
+	if(arguments[1]=="-h"){
+		print_help();
+		exit(0);
+	}
+	if(arguments[1]=="-t"){
+		test_feature(arguments);
 		exit(0);
 	}
 }

@@ -25,3 +25,26 @@ install(TARGETS ELECTRO_BRAIN DESTINATION bin)
 install(FILES "${PROJECT_BINARY_DIR}/ELECTRO_BRAIN.h"
     DESTINATION include
     )
+
+enable_testing()
+
+
+function(do_test_neuron target iftest whattest type weight signal bias result)
+  add_test(NAME test_neuron${iftest}${whattest}${type}${weight}${signal}${bias} 
+  COMMAND ${target} ${iftest} ${whattest} ${type} ${weight} ${signal} ${bias})
+  set_tests_properties(test_neuron${iftest}${whattest}${type}${weight}${signal}${bias}
+    PROPERTIES PASS_REGULAR_EXPRESSION ${result}
+    )
+endfunction()
+
+do_test_neuron(ELECTRO_BRAIN -t -n lin 1.0 -1.0 000 "Neuron response is -1")
+do_test_neuron(ELECTRO_BRAIN -t -n lin 1.0 0.0 000 "Neuron response is 0")
+do_test_neuron(ELECTRO_BRAIN -t -n lin 1.0 1.0 000 "Neuron response is 1")
+
+do_test_neuron(ELECTRO_BRAIN -t -n sig 1.0 -1.0 000 "Neuron response is 0.269")
+do_test_neuron(ELECTRO_BRAIN -t -n sig 1.0 0.0 000 "Neuron response is 0.500")
+do_test_neuron(ELECTRO_BRAIN -t -n sig 1.0 1.0 000 "Neuron response is 0.731")
+
+do_test_neuron(ELECTRO_BRAIN -t -n tgh 1.0 -1.0 000 "Neuron response is -0.996")
+do_test_neuron(ELECTRO_BRAIN -t -n tgh 1.0 0.0 000 "Neuron response is 0.000")
+do_test_neuron(ELECTRO_BRAIN -t -n tgh 1.0 1.0 000 "Neuron response is 0.996")
